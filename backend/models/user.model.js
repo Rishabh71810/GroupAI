@@ -24,14 +24,33 @@ userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next(); // Skip if password is not modified
     this.password = await bcrypt.hash(this.password, 10);
     next();
-});
+})
 
 userSchema.methods.isValidPassword = async function (password) {
     return await bcrypt.compare(password, this.password);
-};
+}
 
 userSchema.methods.generateJWT = function () {
-    return jwt.sign({ email: this.email }, process.env.JWT_SECRET, { expiresIn: "24h" });
+    // Debug log for this object
+   
+    if (!this.email) {
+        throw new Error('Email is required for token generation');
+    }
+
+    const payload = {
+        email: this.email,
+        id: this._id
+    };
+    
+    // Debug log for payload
+    console.log('JWT Payload:', payload);
+    
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });
+    
+    // Debug log for generated token
+    console.log('Generated token:', token);
+    
+    return token;
 };
 
 const User = mongoose.model("User", userSchema);

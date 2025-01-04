@@ -1,24 +1,41 @@
 import jwt from 'jsonwebtoken';
-import 'dotenv/config'
 import redisClient from '../services/redis.service.js';
-export const authUser = async(req,res,next)=>{
-    try{
-        const token = req.cookies.token || req.headers.authorization.split(' ')[ 1 ];
-        if(!token){ 
-            return res.status(401).json({error: 'No token, authorization denied'});
-        }
 
-        const isBlackListed = await redisClient.get(token);
-        // if token is on redis means user is logged out
-        if(isBlackListed){
-            res.cookie('token','');
-            return res.status(401).send({error:'still in redis'})
-        }
-        const decoded = jwt.verify(token,process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
+export const authUser = async (req, res, next) => {
+  try {
+    // Debug request headers
+   // console.log('Auth Headers:', req.headers.authorization);
+
+    // Check for authorization header
+    if (!req.headers.authorization) {
+      return res.status(401).json({ error: 'Authorization header missing' });
     }
-catch(error){
-    console.log(error);
-    res.status(401).json({error: 'No token, authorization denied'});
-}};
+
+    const token = req.headers.authorization.split(' ')[1];
+    
+    // Debug token
+    //console.log('Extracted Token:', token);
+
+    if (!token) {
+      return res.status(401).json({ error: 'No token, authorization denied' });
+    }
+
+    const isBlackListed = await redisClient.get(token);
+    if (isBlackListed) {
+      return res.status(401).json({ error: 'Token is blacklisted' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    //console.log('Decoded Token:', decoded); // Debug decoded token
+
+    if (!decoded.email) {
+      return res.status(401).json({ error: 'Token payload missing email' });
+    }
+
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Auth Error:', error);
+    res.status(401).json({ error: 'Token is invalid or expired' });
+  }
+};

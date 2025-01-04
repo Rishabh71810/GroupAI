@@ -14,8 +14,10 @@ export const createUserController = async (req, res) => {
      try {
         const user = await userService.createUser(req.body);
         const token = await user.generateJWT();
-        res.status(201).json({ user, token });
+
         delete user._doc.password;
+        res.status(201).json({ user, token });
+        
      } catch (error) {
         res.status(400).send(error.message);
      }
@@ -31,7 +33,7 @@ export const loginController = async(req,res)=>{
    try {
       const { email, password}=req.body;
 
-      const user = await userModel.findOne({email}).select('password')
+      const user = await userModel.findOne({email}).select('password email');
 
       if(!user){
          res.status(401).json({
@@ -53,7 +55,7 @@ export const loginController = async(req,res)=>{
 }
 // this controller should work for only one authenticated user 
 export const profileController = async(req,res)=>{
-     console.log(req.user);
+    // console.log(req.user);
      res.status(200).json({
       user: req.user
      });
