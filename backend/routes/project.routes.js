@@ -21,4 +21,6 @@ router.put('/add-user',
    projectController.addUserToProject
 )
 
+router.get('/get-project',authUser,projectController.getProjectById)
+
  export default router;
