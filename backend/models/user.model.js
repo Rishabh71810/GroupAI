@@ -43,16 +43,16 @@ userSchema.methods.generateJWT = function () {
     };
     
     // Debug log for payload
-    console.log('JWT Payload:', payload);
+    //console.log('JWT Payload:', payload);
     
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "24h" });
     
     // Debug log for generated token
-    console.log('Generated token:', token);
+    //console.log('Generated token:', token);
     
     return token;
 };
 
-const User = mongoose.model("User", userSchema);
-
+const User = mongoose.model("user", userSchema);
+// here i did  one error i wrote User instead of user then i getProjectbyId i get en error of Schema not found
 export default User;
