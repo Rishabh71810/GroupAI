@@ -1,13 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios'
+/**
+ * Project component represents the main interface for managing a project.
+ * It includes functionalities for adding collaborators, toggling side panels,
+ * and displaying messages.
+ * 
+ * @param {Object} props - The component props.
+ * @param {Function} props.navigate - Function to navigate between routes.
+ * 
+ * @returns {JSX.Element} The rendered Project component.
+ * 
+ * The component maintains several states:
+ * - isSidePanelOpen: Boolean state to toggle the visibility of the side panel.
+ * - isModalOpen: Boolean state to toggle the visibility of the modal for adding collaborators.
+ * - selectedUserId: Set state to keep track of selected user IDs.
+ * - users: Array state to store the list of users fetched from the server.
+ * 
+ * The component uses the `useEffect` hook to fetch the list of users when the component mounts.
+ * The `handleUserClick` function toggles the selection of a user by their ID.
+ * 
+ * The `Array.from` method is used to convert the Set of selected user IDs into an array for easier manipulation and comparison.
+ */
 const Project = ({ navigate }) => {
   const location = useLocation();
   const [isSidePanelOpen, setisSidePanelOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState([]);
-
+  const [project,setProject]=useState(location.state.project);
   const [users ,setUsers]=useState([])
+  /**
+   * Handles the user click event to toggle the selection of a user by their ID.
+   * 
+   * @param {string} id - The ID of the user to be toggled.
+   * 
+   * The function updates the state of selected user IDs. If the user ID is already
+   * in the set of selected user IDs, it removes the ID from the set. If the user ID
+   * is not in the set, it adds the ID to the set.
+   */
   const handleUserClick = (id) => {
    setSelectedUserId(prevSelectedUserId => {
     const newSelectedUserId = new Set(prevSelectedUserId);
@@ -21,7 +51,34 @@ const Project = ({ navigate }) => {
     
   };
 
+  function addCollaborators(){
+    if (!location.state?.project?._id) {
+      alert("Project ID is missing. Please select a project first.");
+      navigate('/dashboard');
+      return;
+    }
+    
+    const projectId = location.state.project._id;
+    axios.put("/projects/add-user",{
+      projectId: projectId,
+      users: Array.from(selectedUserId)
+    }).then(res => {
+      setIsModalOpen(false);
+    }).catch(err => {
+      
+      console.error(err);
+    })
+  }
+ 
+
   useEffect(()=>{
+
+     axios.get(`projects/get-project/${location.state.project._id}`)
+     .then(res=>{
+      setProject(res.data.project)
+     }).catch(err=>{
+      console.log(err);
+     })
      axios.get('/users/all').then(res=>{
       setUsers(res.data.users)
      }).catch(err=>{
@@ -63,18 +120,23 @@ const Project = ({ navigate }) => {
         </div>
 
         <div className={`sidePanel w-96 h-full flex flex-col gap-2 bg-slate-50 absolute transition-all ${isSidePanelOpen ? '-translate-x-0' : '-translate-x-full'} top-0`}>
-          <header className='flex justify-end px-4 p-2 bg-slate-200'>
+          <header className='flex justify-between items-center px-4 p-2 bg-slate-200'>
+            <h1 className='font-semibold'>Collaborators</h1>
             <button onClick={() => setisSidePanelOpen(!isSidePanelOpen)}>
               <i className='ri-close-fill'></i>
             </button>
           </header>
           <div className='users flex flex-col gap-2'>
-            <div className='user flex cursor-pointer hover:bg-slate-200 p-2 '>
+             {project.users && project.users.map(user=>{
+              return(
+                <div className='user flex cursor-pointer hover:bg-slate-200 p-2 '>
               <div className='aspect-square rounded-full w-fit h-fit flex items-center justify-center text-white p-5 bg-slate-600'>
                 <i className='ri-user-fill absolute'></i>
               </div>
-              <h1 className='font-semibold text-lg p-1 '>username</h1>
+              <h1 className='font-semibold text-lg p-1 '>{user.email}</h1>
             </div>
+              )
+             })}
           </div>
         </div>
       </section>
@@ -99,7 +161,7 @@ const Project = ({ navigate }) => {
                             ))}
                         </div>
                         <button
-          
+                           onClick={addCollaborators}
                             className='absolute bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-blue-600 text-white rounded-md'>
                             Add Collaborators
                         </button>
