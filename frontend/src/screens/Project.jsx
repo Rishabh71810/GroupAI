@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios'
 import { initializeSocket } from '../config/socket';
+
 /**
  * Project component represents the main interface for managing a project.
  * It includes functionalities for adding collaborators, toggling side panels,
