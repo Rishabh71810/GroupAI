@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext} from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios'
-import { initializeSocket } from '../config/socket';
-
+import { initializeSocket, recieveMessage,sendMessage } from '../config/socket';
+import {UserContext} from '../context/user.context'
 /**
  * Project component represents the main interface for managing a project.
  * It includes functionalities for adding collaborators, toggling side panels,
@@ -23,13 +23,15 @@ import { initializeSocket } from '../config/socket';
  * The `handleUserClick` function toggles the selection of a user by their ID.
  * 
  * The `Array.from` method is used to convert the Set of selected user IDs into an array for easier manipulation and comparison.
- */
+ */ 
 const Project = ({ navigate }) => {
   const location = useLocation();
   const [isSidePanelOpen, setisSidePanelOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState([]);
   const [project,setProject]=useState(location.state.project);
+  const [message, setMessage] = useState('')
+  const {user} = useContext(UserContext)
   const [users ,setUsers]=useState([])
   /**
    * Handles the user click event to toggle the selection of a user by their ID.
@@ -71,16 +73,28 @@ const Project = ({ navigate }) => {
       console.error(err);
     })
   }
+
+  const send =  () =>{
+    console.log(user);
+    sendMessage('project-message',{
+      message,
+      sender:user._id
+    })
+
+    setMessage("")
+  }
  
 
   useEffect(()=>{
-
+     
+     initializeSocket(project._id)
      axios.get(`projects/get-project/${location.state.project._id}`)
      .then(res=>{
       setProject(res.data.project)
      }).catch(err=>{
       console.log(err);
      })
+
      axios.get('/users/all').then(res=>{
       setUsers(res.data.users)
      }).catch(err=>{
@@ -115,7 +129,7 @@ const Project = ({ navigate }) => {
 
           <div className='inputField w-full flex'>
             <input className='p-2 px-9 border-none outline-none flex-grow' type='text' placeholder='Enter The Message' />
-            <button className='flex-group bg-slate-950 px-5 text-white'>
+            <button onClick ={send} className='flex-group bg-slate-950 px-5 text-white'>
               <i className='ri-send-plane-fill '></i>
             </button>
           </div>
