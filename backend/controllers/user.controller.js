@@ -5,9 +5,12 @@ import redisClient from '../services/redis.service.js';
 
 
 export const createUserController = async (req, res) => { 
+    console.log('Registration request body:', req.body);
+    
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) { 
+        console.log('Validation errors:', errors.array());
         return res.status(400).json({ errors: errors.array() });
      }
 
@@ -16,41 +19,53 @@ export const createUserController = async (req, res) => {
         const token = await user.generateJWT();
 
         delete user._doc.password;
+        console.log('User registered successfully:', { email: user.email });
         res.status(201).json({ user, token });
         
      } catch (error) {
+        console.error('Registration error:', error.message);
         res.status(400).send(error.message);
      }
 }
 
 export const loginController = async(req,res)=>{
+   console.log('Login request body:', req.body);
+   
    const errors = validationResult(req);
 
    if(!errors.isEmpty()){
+      console.log('Login validation errors:', errors.array());
       return res.status(400).json({errors : errors.array()});
    }
 
    try {
-      const { email, password}=req.body;
+      const { email, password } = req.body;
 
       const user = await userModel.findOne({email}).select('password email');
 
       if(!user){
-         res.status(401).json({
+         console.log('User not found:', email);
+         return res.status(401).json({
             errors:'Invalid Credentials'
-         })
+         });
       }
 
+      console.log('User found, checking password');
       const isMatch = await user.isValidPassword(password);
 
       if(!isMatch){
-         return res.status(400).json({errors:'Invalid Credentials'})
+         console.log('Password does not match');
+         return res.status(400).json({errors:'Invalid Credentials'});
       }
 
-      const token = await user.generateJWT(); 
-      res.status(200).json({user,token});
+      console.log('Password matched, generating token');
+      const token = await user.generateJWT();
+      console.log('Login successful for:', email);
+      console.log('Generated token:', token);
+      res.status(200).json({user, token});
    } catch (error) {
-      res.status(400).send(error.message)
+      console.error('Login error:', error.message);
+      res.status(400).send(error.message);
    }
 }
 // this controller should work for only one authenticated user 
